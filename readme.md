@@ -87,7 +87,7 @@ While receiving I could see a value of `0x0580`, and a value of `0x0300` while n
 | 7 | Receiving (squelch+css/dcss?) bit | 1 = receiving, 0 = not receiving |
 
 # Firmware
-It's trivial to dump the firmware if the MCU starts in its bootloader mode (BOOT0 set to HIGH) through SWD. See [this](https://github.com/IOsetting/py32f0-template/issues/60#issuecomment-3226084080) comment on how to dump the flash. My firmware seems to have a version of `V.01.07`. All my analysis has been done on that version.
+It's trivial to dump the firmware if the MCU starts in its bootloader mode (`BOOT0` set to HIGH) through SWD. See [this](https://github.com/IOsetting/py32f0-template/issues/60#issuecomment-3226084080) comment on how to dump the flash. My firmware seems to have a version of `V.01.07`. All my analysis has been done on that version.
 
 Seems like Baofeng has a bootloader in place, using the first 5kB (0x0000-0x13ff) of flash. There's an "application" loaded right after the bootloader. This application is just a regular Puya PY32F0x binary image, as described below.
 
@@ -97,7 +97,7 @@ The bootloader is able to update the "application" through the serial port (usin
 I haven't tried it yet, but seems to be as simple as just sending 128 bytes chunks of the 26kB binary image at a time, and waiting for a single byte of ACK (0x06) or NACK (which is an error, and the processor "halts", 0x4e). Once the whole 26kB of data is transferred (19200 bps, 1 stop bit, no parity), I think the bootloader just boots it.
 
 ## Application
-The application binary is located at `0x4000` in the flash (`0x08001400` in the MCU's memory map), containing the VTOR table (Stack Pointer and IRQ handlers). All pointers point to a direction in the MCU's memory address, they're not a *flash offset*!
+The application binary is located at `0x14000` in the flash (`0x08001400` in the MCU's memory map), containing the VTOR table (Stack Pointer and IRQ handlers). All pointers point to a direction in the MCU's memory address, they're not a *flash offset*!
 
 
 | Address in flash | Description | Remarks |
@@ -171,3 +171,10 @@ The following table contains a list of offsets from the start of the "EEPROM" an
 | 0x03c4-0x0c6 | 1 | Unused | |
 | 0x03c7 | 1 | Bit0 = Scan Mode (0 = carrier, 1 = time) | TBD |
 
+# Homebrew Firmware
+
+This is a work-in-progress. Current aim is to be able to flash a custom application replacing Baofeng's stock application (leaving their bootloader in place!).
+
+A new linker script should be created for the hello world homebrew application. The idea for this app is to send some data through the UART, maybe reacting to the PTT, FUN and MONITOR buttons; and/or even reading and writing registers of the AT1141 to further understand how it works.
+
+Please feel free to open PRs or questions as a new issue.
