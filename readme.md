@@ -92,7 +92,7 @@ It's trivial to dump the firmware if the MCU starts in its bootloader mode (`BOO
 Seems like Baofeng has a bootloader in place, using the first 5kB (0x0000-0x13ff) of flash. There's an "application" loaded right after the bootloader. This application is just a regular Puya PY32F0x binary image, as described below.
 
 ## Bootloader
-The bootloader is able to update the "application" through the serial port (using the programming cable) via a really simple protocol. In order to enter this mode, the radio needs to be off, channel set as 4 (TBD) and the FUN+MONITOR buttons pressed simultaneously, then turn the radio on. There's no indication that the processor has entered the bootloader mode, other than the fact that it doesn't do anything when pressing the keys.
+The bootloader is able to update the "application" through the serial port (using the programming cable) via a really simple protocol. In order to enter this mode, the radio needs to be off, channel set as 4 (TBD) and the PTT+MONITOR buttons pressed simultaneously, then turn the radio on. The green LED will stay lit.
 
 I haven't tried it yet, but seems to be as simple as just sending 128 bytes chunks of the 26kB binary image at a time, and waiting for a single byte of ACK (0x06) or NACK (which is an error, and the processor "halts", 0x4e). Once the whole 26kB of data is transferred (19200 bps, 1 stop bit, no parity), I think the bootloader just boots it.
 
