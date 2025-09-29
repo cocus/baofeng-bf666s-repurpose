@@ -14,8 +14,8 @@ These are the pins of the main PY32F002 MCU:
 
 | Chip Pin | Signal Description | Remarks |
 | --- | --- | --- |
-| A0 | AT1141 SDIO | I2C bus SDA, bitbanged, external 9k pull up |
-| A1 | AT1141 SCLK | I2C bus SCL, bitbanged, external 9k pull up |
+| A0 | AT1141 SDIO | I2C bus SDA, bitbanged (ridiculous!!!), external 9k pull up |
+| A1 | AT1141 SCLK | I2C bus SCL, bitbanged (ridiculous!!!), external 9k pull up |
 | PB2 | Rotary encoder bit 4 | |
 | PB0 | Rotary encoder bit 1 | |
 | PA7 | Rotary encoder bit 8 | |
@@ -92,7 +92,7 @@ It's trivial to dump the firmware if the MCU starts in its bootloader mode (`BOO
 Seems like Baofeng has a bootloader in place, using the first 5kB (0x0000-0x13ff) of flash. There's an "application" loaded right after the bootloader. This application is just a regular Puya PY32F0x binary image, as described below.
 
 ## Bootloader
-The bootloader is able to update the "application" through the serial port (using the programming cable) via a really simple protocol. In order to enter this mode, the radio needs to be off, channel set as 4 (TBD) and the PTT+MONITOR buttons pressed simultaneously, then turn the radio on. The green LED will stay lit.
+The bootloader is able to update the "application" through the serial port (using the programming cable) via a really simple protocol. In order to enter this mode, the radio needs to be off, channel set as 5 and the PTT+MONITOR buttons pressed simultaneously, then turn the radio on. The green LED will stay lit.
 
 I haven't tried it yet, but seems to be as simple as just sending 128 bytes chunks of the 26kB binary image at a time, and waiting for a single byte of ACK (0x06) or NACK (which is an error, and the processor "halts", 0x4e). Once the whole 26kB of data is transferred (19200 bps, 1 stop bit, no parity), I think the bootloader just boots it.
 
@@ -173,8 +173,48 @@ The following table contains a list of offsets from the start of the "EEPROM" an
 
 # Homebrew Firmware
 
-This is a work-in-progress. Current aim is to be able to flash a custom application replacing Baofeng's stock application (leaving their bootloader in place!).
+> [!NOTE]
+> This is a work-in-progress.
 
-A new linker script should be created for the hello world homebrew application. The idea for this app is to send some data through the UART, maybe reacting to the PTT, FUN and MONITOR buttons; and/or even reading and writing registers of the AT1141 to further understand how it works.
+The idea for this app is to send some data through the UART, maybe reacting to the PTT, FUN and MONITOR buttons; and/or even reading and writing registers of the AT1141 to further understand how it works.
+
+At this moment, the hello-world firmware can be built by just running `make`.
+
+> ARM toolchain/make/etc are required. You'd need to clone this repo with submodules, like:
+>
+> `git clone --recurse-submodules https://github.com/cocus/baofeng-bf666s-repurpose.git`
 
 Please feel free to open PRs or questions as a new issue.
+
+## Custom Baofeng-compliant application
+
+I've created a simple application that can be uploaded through the original Baofeng's bootloader. This application jumps to the Puya's ROM bootloader in a very creative way (i.e. no need to toggle `BOOT0`). It behaves a little bit weird; since the bootloader isn't started from a cold boot, a pretty weird glitch happens: you have to click the "connect" button on the Puya ISP program a few times. But that's it.
+
+The idea behind this simple application is to let others flash the entire chip through the Puya ISP program without taking apart the device!
+
+In order to build the application, you should have an ARM toolchain set up in your machine. Change the paths accordingly on `Makefile-app`. Once that's set up, just run `make -f Makefile-app`.
+
+The resulting `app-launch-bl.bin` binary will be placed on the `Build-app-launch-bl` directory.
+
+## Baofeng bootloader application uploader
+
+Due to the fact there's no specs available, I've tried to create a script that might be able to talk to the original Baofeng bootloader (the one triggered by setting the radio on channel 5, pressing PTT+MONITOR and turning it on).
+
+However, I didn't have enough patience to figure the problems of my script, and it can't upload reliably more than one chunk (128 bytes).
+There are some stages of the bootloader that I seem to have not understood correctly. But in any case, 128 bytes is enough for the custom application I've mentioned above.
+
+To upload a binary, you need Python and `tqdm` (run `pip install tqdm` to install it) and the programming cable connected to the radio.
+
+Turn off the radio, select channel 5, press PTT+MONITOR at the same time and turn the radio on. Then, run the following command:
+
+```bash
+python bf-fw-up.py COM4 Build-app-launch-bl/app-launch-bl.bin
+```
+
+(this assumes the serial adapter is at port `COM4` and you want to upload `Build-app-launch-bl/app-launch-bl.bin`)
+
+> [!CAUTION]
+> This will erase the application (Baofeng's bootloader will remain there), the one that makes the radio work as a radio.
+> Please don't run this command if you don't have a dump of your own radio's flash. Otherwise, you'd have to obtain a flash dump to recover the radio, or wait for this project to be usable :)
+
+

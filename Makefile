@@ -59,7 +59,7 @@ JLINK_DEVICE	?= $(shell echo $(MCU_TYPE) | tr '[:lower:]' '[:upper:]')
 # PyOCD device (Lowercases)
 PYOCD_DEVICE	?= $(shell echo $(MCU_TYPE) | tr '[:upper:]' '[:lower:]')
 # Link descript file: 
-LDSCRIPT		= py32f002ax5-baofeng-app.ld
+LDSCRIPT		= $(PY32F0_TEMPLATE)Libraries/LDScripts/$(PYOCD_DEVICE).ld
 
 
 # PY32F002A,003,030 >>>
